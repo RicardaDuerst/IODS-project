@@ -1,4 +1,4 @@
-# Insert chapter 2 title here
+# Regression and model validation
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -7,7 +7,59 @@
 - Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
 
 ```{r}
-date()
+data <- read.table("data\\learning2014.csv", header = T, sep = ",")
+head(data)
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+dim(data)
 ```
 
 Here we go again...
+
+```{r}
+suppressWarnings(library(ggplot2))
+suppressWarnings(library(GGally))
+```
+
+```{r}
+ggpairs(data, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)),
+        upper = list(continuous = wrap("cor", size = 2.5))) 
+```
+
+Go on...
+
+```{r}
+summary(data$gender)
+summary(data$Age)
+summary(data$Attitude)
+summary(data$deep)
+summary(data$stra)
+summary(data$surf)
+summary(data$points)
+```
+
+Go on
+
+```{r}
+model1 <- lm(Points ~ Attitude + surf + stra, data = data)
+summary(model1)
+```
+
+Bla bla bla
+
+```{r}
+model2 <- lm(Points ~ Attitude, data = data)
+summary(model2)
+```
+
+Bla bla bla
+
+```{r}
+par(mfrow = c(2,2))
+plot(model2, which = c(1, 2, 5))
+```
