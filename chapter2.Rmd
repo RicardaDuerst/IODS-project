@@ -1,37 +1,50 @@
 # Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
+*This week's topic is simple regression analysis with linear models and method validation. What follows is a short report on my results for Exercise 2 of the IODS course.*
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
+The data used for this analysis is from the International Survey of Approaches to Learning, made possible by Teacher's Academy funding for Kimmo Vehkalahti. Data were collected from 3.12.2014 to 10.01.2015 from students taking part in a statistics course. I created a subset of the data including variables on demographic characteristics and learning attitudes. The main interest of this analysis is the relationship between student's learning approaches and exam outcomes.
 
 ```{r}
+# read in previously prepared data
 data <- read.table("data\\learning2014.csv", header = T, sep = ",")
+# the first six rows of the data set
 head(data)
 ```
 
-```{r}
-str(data)
-```
+My data set contains 166 observations and seven variables. Those being: **gender** (coded as a factor with the two levels male (M) and female (F)), **age** (in years, derived from the date of birth), **Points** (the student's exam points in a statistics exam), a combination variable that measures the student's general attitude toward statistics (**Attitude**), as well as three combination variables assessing different learning approaches:  
+ - Deep approach: the student wants to maximize their understanding and has a true commitment to learning (**deep**)  
+ -  Surface approach: the student memorizes withour understanding and lacks personal engagement in the learning process (**surf**)  
+ -  Strategic approach: the student applys a strategy that maximises the chance of achieving the highest possible grade (**stra**).  
 
 ```{r}
+# row and column numbers of the data set
 dim(data)
 ```
 
-Here we go again...
+All combination variables have been scaled to their original scales by taking the mean. The three learning approaches are coded numerically while **Attitude**, **Points**, and **age** are integer variables. Further, I excluded observations where the exam points variable is zero, meaning that the student did not attend the exam.
 
 ```{r}
-suppressWarnings(library(ggplot2))
-suppressWarnings(library(GGally))
+# structure of the data set and it's variables
+str(data)
 ```
 
+To further explore the data set and the relationships between it's variables, I used the R function **ggpairs**. The R libraries *ggplot2* and *GGally* are needed for that. The output is a correlation matrix with 49 different diagnostics and plots resultung from the combination of all seven variables from the data set, separately for males (blue) and females (pink). For numerical variables, scatter plots are drawn on the left side (under the diagonal) and Pearson's correlation coefficient is given on the right side (above the diagonal). On the diagonal, we can see the distribution of a each variable. For combinations of numerical variables with the bivariate (not numerical) variable **gender**, the plot provides boxplots (in the first row) and histograms (in the first column).  
+Regarding the relationship between the variables, there seems to be a strong positive correlation between the student's general attitude toward statistics (**Attitude**) and their exam score (**Points**) with a correlation coefficient of 0.437 for both sexes combined.  Further, there are weaker correlations between the strategic learning approach (**stra**) and **Points**, as well as between **surf** and **Points**. In addition, there a stronger negative  relationships between the surface learning variable (**surf**) and the other two learning approaches, as well as **Attitude**. In summary, a higher positive attitude toward statistics, having a more strategical learning approach and having a less of a surface approach are correlated with a higher exam score. However, there are differences between the genders. Further, students that have a good general attitude, adopt more of a deep learning approach or a less strategical learning approach tend to have a lower score for the surface learning approach.
+
+```{r results = "hide", message = FALSE, warning = FALSE}
+# load necessary libraries
+library(ggplot2)
+library(GGally)
+```
+
+
 ```{r}
+# plot
 ggpairs(data, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)),
         upper = list(continuous = wrap("cor", size = 2.5))) 
 ```
 
-Go on...
+Further, I looked at summary measures for each variable. The exploration of the data shows that around 66% of the students are female and the majority of students is in it's early to mid-20s. However, the oldest student is a 55 years old man. On average, students attending the exam scored 22.7 points.
 
 ```{r}
 summary(data$gender)
@@ -40,26 +53,34 @@ summary(data$Attitude)
 summary(data$deep)
 summary(data$stra)
 summary(data$surf)
-summary(data$points)
+summary(data$Points)
 ```
 
-Go on
+To answer the question which of the variables have an effect on a student's exam points, I fitted a linear regression model with **Points** as the target variable and **Attitude**, **Age**, and **stra** as the explanatory variables. I chose these variables based on the correlations from the ggpairs plot. I did not include **surf** because one of the seven classical assumptions of Ordinary Least Squares (OLS) linear regression is that the explanatory variables are independent from each other. Given the correlation between **surf** and the other two learning approaches as well as **Attitude**, this assumption would be violated if I included **surf** in the model. 
 
 ```{r}
-model1 <- lm(Points ~ Attitude + surf + stra, data = data)
+# linear regression model  with three explanatory variables
+model1 <- lm(Points ~ Attitude + Age + stra, data = data)
+```
+
+The summary of my model shows that all three explanatory variables have a statistically significant relationship with the target variable if we apply a significance level of 0.1 (90%). This is indicated by the coefficient's p-value (last column) that is smaller than 0.1 for all variables. The statistical test behind this value helps to determine whether the relationships observed in the sample also exist in the larger population. The p-value for each independent variable tests the null hypothesis that the variable has no correlation with the dependent variable. Overall, my model explains 21.82% of the variation in the target variable **Attitude**, as indicated by the goodness-of-fit measure Multiple R-squared. R-squared evaluates the scatter of the data points around the fitted regression line. Higher R-squared values represent smaller differences between the observed data and the fitted values.
+
+Regarding the interpretation of the model parameters, **Attitude** and **stra** are positively and **Age** is negatively correlated with the exam points. If the measure for the general attitude toward statistics increases by one unit (more positively toward statistics), the average increase in exam points is 0.35 points, while assuming that the other variables stay constant. Further, with every year of age, the exam score decreases on average by 0.09 points. And lastly, having one unit more of an strategic learning approach increases the exam points by one point on average. However, the standard error for the **stra** coefficient is quite big compared to the others (Std. Error of 0.53 vs. 0.06 (Attitude) and 0.05 (Age)). An interpretation of the intercept would not contain any meaningful information.
+
+```{r}
 summary(model1)
 ```
 
-Bla bla bla
 
-```{r}
-model2 <- lm(Points ~ Attitude, data = data)
-summary(model2)
-```
-
-Bla bla bla
+To validate my model I plotted three different residual diagnostics. With these plots I am able to validate four model assumptions regarding the residuals:  
+ - The errors are normally distributed --> *QQ-plot*  
+ - The errors are not correlated --> *Residuals vs. Fitted*  
+ - The errors have constant variance, and the size of a given error does not depend on the explanatory variables --> *Residuals vs. Fitted*.  
+ In addition, using the *Residuals vs. Leverage* plot, shows whetehr there single observation that have too much impact on the regression line.  
+ 
+ The first plot shows the residuals plotted against the fitted values from the model. Because there is no visible pattern in the residuals, I think that the assumptions on error normality, error correlation, constant variance of errors as well as the independence of errors from the explanatory variables are not violated. Further, the standardized residuals adequately follow the line in the QQ-plot. Last but not least, none of the observations is having an outlying strong impact on the regression results, as shown by *Residuals vs. Leverage*.
 
 ```{r}
 par(mfrow = c(2,2))
-plot(model2, which = c(1, 2, 5))
+plot(model1, which = c(1, 2, 5))
 ```
