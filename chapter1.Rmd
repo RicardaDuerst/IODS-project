@@ -1,19 +1,7 @@
 
 # About the project
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
-
-```{r}
-# This is a so-called "R chunk" where you can write R code.
-
-date()
-
-```
-<<<<<<< HEAD
 In this course diary I will update my progress with the online course *Introduction to Open Data Science*. The course focuses on understanding the possibilities of **open science, open data, and open research tools** using RStudio, GitHub and R Markdown. We will also visualize and analyze data sets with some fairly advanced statistical methods. As a first step, we created a GitHub repository for the course: <https://github.com/RicardaDuerst/IODS-project>.  
 I am participating in this course as part of my doctoral research at the University of Helsinki. I have worked happily with R and RStudio since years. However, my GitHub account was never really used since its creation. Therefore, I hope to gain better understanding of GitHub and version control as well as R Markdown files during this course. My goal is to use version control with Git for all my research projects in the future and publish some projects on my GitHub page <https://github.com/RicardaDuerst>.
-=======
-In this course diary I will update my progress with the online course *Introduction to Open Data Science*. The course focuses on understanding the possibilities of **open science, open data, and open research tools** using RStudio, GitHub and R Markdown. We will also visualize and analyze data sets with some fairly advanced statistical methods. As a first step, we created a GitHub repository for the course: https://github.com/RicardaDuerst/IODS-project.  
-I am participating in this course as part of my doctoral research at the University of Helsinki. I have worked happily with R and RStudio since years. However, my GitHub account was never really used since its creation. Therefore, I hope to gain better understanding of GitHub and version control as well as R Markdown files during this course. My goal is to use version control with Git for all my research projects in the future and publish some projects on my GitHub page https://github.com/RicardaDuerst.
->>>>>>> cbc4424eb0e75b69f3dbf131e2ee847c63b758b3
+
 
