@@ -78,7 +78,7 @@ To validate my model I plotted three different residual diagnostics. With these 
  - The errors have constant variance, and the size of a given error does not depend on the explanatory variables --> *Residuals vs. Fitted*.  
  In addition, using the *Residuals vs. Leverage* plot, shows whetehr there single observation that have too much impact on the regression line.  
  
- The first plot shows the residuals plotted against the fitted values from the model. Because there is no visible pattern in the residuals, I think that the assumptions on error normality, error correlation, constant variance of errors as well as the independence of errors from the explanatory variables are not violated. Further, the standardized residuals adequately follow the line in the QQ-plot. Last but not least, none of the observations is having an outlying strong impact on the regression results, as shown by *Residuals vs. Leverage*.
+The first plot shows the residuals plotted against the fitted values from the model. Because there is no visible pattern in the residuals, I think that the assumptions on error normality, error correlation, constant variance of errors as well as the independence of errors from the explanatory variables are not violated. Further, the standardized residuals adequately follow the line in the QQ-plot. Last but not least, none of the observations is having an outlying strong impact on the regression results, as shown by *Residuals vs. Leverage*.
 
 ```{r}
 par(mfrow = c(2,2))
