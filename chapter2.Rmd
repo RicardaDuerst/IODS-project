@@ -13,8 +13,8 @@ head(data)
 
 My data set contains 166 observations and seven variables. Those being: **gender** (coded as a factor with the two levels male (M) and female (F)), **age** (in years, derived from the date of birth), **Points** (the student's exam points in a statistics exam), a combination variable that measures the student's general attitude toward statistics (**Attitude**), as well as three combination variables assessing different learning approaches:  
  - Deep approach: the student wants to maximize their understanding and has a true commitment to learning (**deep**)  
- -  Surface approach: the student memorizes withour understanding and lacks personal engagement in the learning process (**surf**)  
- -  Strategic approach: the student applys a strategy that maximises the chance of achieving the highest possible grade (**stra**).  
+ -  Surface approach: the student memorizes without understanding and lacks personal engagement in the learning process (**surf**)  
+ -  Strategic approach: the student applies a strategy that maximizes the chance of achieving the highest possible grade (**stra**).  
 
 ```{r}
 # row and column numbers of the data set
@@ -28,7 +28,7 @@ All combination variables have been scaled to their original scales by taking th
 str(data)
 ```
 
-To further explore the data set and the relationships between it's variables, I used the R function **ggpairs**. The R libraries *ggplot2* and *GGally* are needed for that. The output is a correlation matrix with 49 different diagnostics and plots resultung from the combination of all seven variables from the data set, separately for males (blue) and females (pink). For numerical variables, scatter plots are drawn on the left side (under the diagonal) and Pearson's correlation coefficient is given on the right side (above the diagonal). On the diagonal, we can see the distribution of a each variable. For combinations of numerical variables with the bivariate (not numerical) variable **gender**, the plot provides boxplots (in the first row) and histograms (in the first column).  
+To further explore the data set and the relationships between it's variables, I used the R function **ggpairs**. The R libraries *ggplot2* and *GGally* are needed for that. The output is a correlation matrix with 49 different diagnostics and plots resulting from the combination of all seven variables from the data set, separately for males (blue) and females (pink). For numerical variables, scatter plots are drawn on the left side (under the diagonal) and Pearson's correlation coefficient is given on the right side (above the diagonal). On the diagonal, we can see the distribution of a each variable. For combinations of numerical variables with the bivariate (not numerical) variable **gender**, the plot provides boxplots (in the first row) and histograms (in the first column).  
 Regarding the relationship between the variables, there seems to be a strong positive correlation between the student's general attitude toward statistics (**Attitude**) and their exam score (**Points**) with a correlation coefficient of 0.437 for both sexes combined.  Further, there are weaker correlations between the strategic learning approach (**stra**) and **Points**, as well as between **surf** and **Points**. In addition, there a stronger negative  relationships between the surface learning variable (**surf**) and the other two learning approaches, as well as **Attitude**. In summary, a higher positive attitude toward statistics, having a more strategical learning approach and having a less of a surface approach are correlated with a higher exam score. However, there are differences between the genders. Further, students that have a good general attitude, adopt more of a deep learning approach or a less strategical learning approach tend to have a lower score for the surface learning approach.
 
 ```{r results = "hide", message = FALSE, warning = FALSE}

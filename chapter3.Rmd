@@ -1,30 +1,109 @@
----
-title: "Logistic Regression"
-author: "Ricarda Duerst"
-date: "11/10/2020"
-output: html_document
----
+# Logistic Regression
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+*This week's topic is logistic regression analysis. What follows is a short report on my results for Exercise 3 of the IODS course.*
+
+```{r results = "hide", message = FALSE, warning = FALSE}
+# load necessary libraries
+library(ggplot2)
+library(GGally)
+library(dplyr)
+library(boot)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+# read in previously prepared data
+alc <- read.table("data\\alc.csv", header = TRUE, sep = ",")
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+colnames(alc) # variable names
+dim(alc) # dimension of the data set
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+4 chosen variables that bmay have relationship with alcohol consumption: absences, failures, G3, goout
+
+```{r}
+# subset the data set to the variables I am interested in
+
+my_alc <- select(alc, high_use, sex, absences, G3, failures, goout)
+```
+
+
+```{r}
+# plot
+ggpairs(my_alc, mapping = aes(col = sex, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)),
+        upper = list(continuous = wrap("cor", size = 2.5))) 
+```
+
+```{r}
+my_model <- glm(high_use ~ failures + absences + goout + G3, data = my_alc, family = "binomial")
+summary(my_model)
+```
+
+```{r}
+# compute odds ratios (OR)
+OR <- coef(my_model) %>% exp()
+
+# compute confidence intervals (CI)
+CI <- confint(my_model) %>% exp()
+
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+```
+
+```{r}
+my_model_2 <- glm(high_use ~ failures + absences + goout, data = my_alc, family = "binomial")
+summary(my_model_2)
+```
+
+```{r}
+# compute odds ratios (OR)
+OR_2 <- coef(my_model_2) %>% exp()
+
+# compute confidence intervals (CI)
+CI_2 <- confint(my_model_2) %>% exp()
+
+# print out the odds ratios with their confidence intervals
+cbind(OR_2, CI_2)
+```
+
+```{r}
+# predict() the probability of high_use
+probs <- predict(my_model_2, type = "response")
+
+# add the predicted probabilities to 'alc'
+my_alc <- mutate(my_alc, probability = probs)
+
+# use the probabilities to make a prediction of high_use
+my_alc <- mutate(my_alc, prediction = ifelse(probability > 0.5, TRUE, FALSE))
+
+# tabulate the target variable versus the predictions
+table(high_use = my_alc$high_use, prediction = my_alc$prediction)
+
+```
+
+```{r}
+# make plot with predictions and actual values
+ggplot(my_alc, aes(x = probability, y = high_use, col = prediction)) + geom_point()
+
+# tabulate the target variable versus the predictions
+table(high_use = my_alc$high_use, prediction = my_alc$prediction) %>% prop.table %>% addmargins
+```
+
+```{r}
+# define a loss function (average prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# compute the average number of wrong predictions in the (training) data
+loss_func(my_alc$high_use, my_alc$probability)
+
+# K-fold cross-validation
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = my_model_2, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
