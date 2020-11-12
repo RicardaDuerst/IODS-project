@@ -1,6 +1,8 @@
 # Logistic Regression
 
-*This week's topic is logistic regression analysis. What follows is a short report on my results for Exercise 3 of the IODS course.*
+*What follows is my report for the IODS course exercise 3 that focuses on performing and interpreting logistic regression analysis.*
+
+The data used for this analysis is from the University of California's Machine Learning Repository (Dua, D. and Graff, C. (2019). UCI Machine Learning Repository <http://archive.ics.uci.edu/ml>. Irvine, CA: University of California, School of Information and Computer Science). The **Student Performance Data set** (P. Cortez and A. Silva. Using Data Mining to Predict Secondary School Student Performance. In A. Brito and J. Teixeira Eds., Proceedings of 5th FUture BUsiness TEChnology Conference (FUBUTEC 2008) pp. 5-12, Porto, Portugal, April, 2008, EUROSIS, ISBN 978-9077381-39-7.<http://www3.dsi.uminho.pt/pcortez/student.pdf>) has information on student's achievements in secondary education of two Portuguese schools. The data includes variables on student's grades, demographics, social and school related features, as well as alcohol consumption. Two data sets were collected using questionnaires and address the performance in two distinct subjects: Mathematics and Portuguese language . 
 
 ```{r results = "hide", message = FALSE, warning = FALSE}
 # load necessary libraries
@@ -15,20 +17,35 @@ library(boot)
 alc <- read.table("data\\alc.csv", header = TRUE, sep = ",")
 ```
 
+I previously performed data preparation steps to enable a logistic regression analysis. The result is a joined data set with 382 observations of students and 35 variables which can be seen in the following list. The variables contain information on student's school outcomes (*G1*, *G2*, *G3*, *failures*), demographics (e.g. *sex*, *age*, *address*, *famsize*, *health*) and variables concerning school-related (e.g. *reason*, *studytime*, *paid*, *higher*, *absences*) and social behavior (e.g. *romantic*, *freetime*, *goout*) including alcohol consumption (*Dalc*, *Walc*).
+
 ```{r}
 colnames(alc) # variable names
 dim(alc) # dimension of the data set
 ```
+The purpose of this analysis is to study the relationship between high or low alcohol consumption and other variables of the data set. Therefore, the following adjustments have been made to the data:
 
+* The variables not used for joining the two data sets have been combined by averaging,
+* *alc_use* is the average of *Dalc* (workday alcohol consumption) and *Walc* (weekend alcohol consumption), and
+* *high_use* is TRUE if *alc_use* is higher than 2 and FALSE otherwise.    
 
-4 chosen variables that bmay have relationship with alcohol consumption: absences, failures, G3, goout
+I chose four variables that may have a relationship with alcohol consumption measured with *high_use*: *absences* (number of school absences), *failures* (number of past class failures), *G3* (final grade), and *goout* (going out with friends). I came up with the following personal hypotheses for the relationship of these variables with the student's alcohol consumption:
+
+* A higher number of school absences is associated with high alcohol consumption,  
+* a higher number of failed classes in the past is associated with a high alcohol consumption,  
+* a higher final grade is associated with low alcohol consumption, and
+* going out with friends more often is associated with high alcohol consumption.    
+
+To make the analysis easier, I subset the data into a new data set only containing the variables I am interested in.
 
 ```{r}
 # subset the data set to the variables I am interested in
-
 my_alc <- select(alc, high_use, sex, absences, G3, failures, goout)
 ```
 
+To further explore the data set and the relationships between it's variables, I used the R function *ggpairs*. The output is a correlation matrix with 36 different diagnostics and plots resulting from the combination of all six variables from the data set, separately for males (blue) and females (pink). For numerical variables, scatter plots are drawn on the left side (under the diagonal) and Pearson's correlation coefficient is given on the right side (above the diagonal). On the diagonal, we can see the distribution of a each variable. For combinations of numerical variables with the bivariate (not numerical) variables *sex* and *high_use*, the plot provides box plots (in the rows) and histograms (in the columns). The histograms fro alcohol usage shows low consumption on the left and high consumption on the right side.  
+
+Regarding the relationships between the variables, it seems that my hypotheses are mainly reasonable: First, the histogram for school absences and alcohol consumption points towards a tendency that students with high alcohol consumption have more school absences than the ones with low alcohol consumption. Generally, most students of both sexes have a low number of school absences. The distribution is heavily right-skewed. However, regarding my second hypothesis, there is no visible  relationship between the number of failed classes and alcohol consumption. Most students did not fail classes, though. Finally, a higher final grade and going out with friends less often seem to be associated with low alcohol consumption, as seen from the histograms. Further, there are some strong correlations between other variables: For both sexes, there is a strong negative relationship between a higher final grade and the number of failed classes, which is not surprising. Only for males, there are correlations of the variables *absences*, *G3*, and *failures* with *goout*. Going out with friends more often is associated with more school absences, a lower final grade, and more failed classes. 
 
 ```{r}
 # plot
@@ -36,60 +53,61 @@ ggpairs(my_alc, mapping = aes(col = sex, alpha = 0.3), lower = list(combo = wrap
         upper = list(continuous = wrap("cor", size = 2.5))) 
 ```
 
+For the regression analysis, I start with a logistic regression model on the bivariate variable for alcohol consumption (*high_use*) including all of my chosen variables as explanatory variables. The z-test for the model coefficients shows us that the final grade (*G3*) is not significantly associated with the probability for high alcohol consumption. However, going out with friends (*goout*) and the number of school absences (*absences*) are highly significant predictors of the probability of high alcohol consumption. The number of failed classes (*failures*) is a less strong predictor and considering the typical significance level of 5%, it is not statistically significant.  
+
 ```{r}
 my_model <- glm(high_use ~ failures + absences + goout + G3, data = my_alc, family = "binomial")
 summary(my_model)
 ```
+I calculated the Odds Ratios of the coefficients and their 95% confidence intervals (width of confidence interval) to interpret the coefficients more easily. The confidence intervals for the final grade and the failures include 1. This confirms the statistically non-significance of these variables as predictors for the target variable. The interpretation of the significant coefficient's Odds Ratios is as follows: With one more school absence, the odds of having high alcohol consumption are approximately 1.1 times higher and with one more unit of going out with friends, the odds for having high alcohol consumption are approximately twice as high.
 
 ```{r}
 # compute odds ratios (OR)
 OR <- coef(my_model) %>% exp()
-
 # compute confidence intervals (CI)
 CI <- confint(my_model) %>% exp()
-
 # print out the odds ratios with their confidence intervals
 cbind(OR, CI)
 ```
+To build a more powerful model, I decided to exclude the non-significant variables on-by-one, starting with the final grade. In this second model, the previously unimportant variable *failures* becomes statistically significant, as indicated in the summary of the model. This is most likely due to the strong relationship between the variables. As a result, I will keep the number of failed classes in the model. Further, this action is justified by the smaller AIC value of my second model. 
 
 ```{r}
 my_model_2 <- glm(high_use ~ failures + absences + goout, data = my_alc, family = "binomial")
 summary(my_model_2)
 ```
+Regarding the Odds Ratios of my second model, none of the confidence intervals of the coefficient's Odds Ratios include 1. Now, having failed one more class results in approximately 1.5 times higher odds for having high alcohol consumption. The interpretation of the Odds Ratios for absences and going out did not change. In conclusion, I am able to **not** dismiss my previously stated hypotheses regarding the positive relationship of school absences, failed classes, and going out with friens with high alcohol consumption. However, I have to dismiss my hypothesis about the relationship of the final grade with high alcohol consumption.
 
-```{r}
+```{r message = FALSE, warning = FALSE}
 # compute odds ratios (OR)
 OR_2 <- coef(my_model_2) %>% exp()
-
 # compute confidence intervals (CI)
 CI_2 <- confint(my_model_2) %>% exp()
-
 # print out the odds ratios with their confidence intervals
 cbind(OR_2, CI_2)
 ```
+I explored my model's predictive power using a cross tabulation and a plot of predictions versus actual values of high alcohol consumption. The cross table shows that my model correctly predicted 246 students with observed low alcohol consumption and 45 people with high alcohol consumption. The training error (total proportion of inaccurately classified individuals) can be computed by adding the number of wrongly predict high alcohol consumption and wrongly predicted low alcohol consumption (taken from the cross table) divided by the total number of individuals. Approximately 24% of the individuals are wrongly predicted. Therefore, my model is better than the simplest guessing strategy that randomly assigns people to high or low alcohol consumption with a probability of 0.5.
 
 ```{r}
 # predict() the probability of high_use
 probs <- predict(my_model_2, type = "response")
-
 # add the predicted probabilities to 'alc'
 my_alc <- mutate(my_alc, probability = probs)
-
 # use the probabilities to make a prediction of high_use
 my_alc <- mutate(my_alc, prediction = ifelse(probability > 0.5, TRUE, FALSE))
-
 # tabulate the target variable versus the predictions
 table(high_use = my_alc$high_use, prediction = my_alc$prediction)
-
+table(high_use = my_alc$high_use, prediction = my_alc$prediction) %>% prop.table %>% addmargins
+# training error
+(22 + 69)/382
 ```
 
 ```{r}
 # make plot with predictions and actual values
 ggplot(my_alc, aes(x = probability, y = high_use, col = prediction)) + geom_point()
 
-# tabulate the target variable versus the predictions
-table(high_use = my_alc$high_use, prediction = my_alc$prediction) %>% prop.table %>% addmargins
 ```
+
+Further, I performed a 10-fold cross-validation on my model. It's prediction error is 0.25 which is better than the model introduced in the DataCamp exercise (0.26).
 
 ```{r}
 # define a loss function (average prediction error)
@@ -97,13 +115,10 @@ loss_func <- function(class, prob) {
   n_wrong <- abs(class - prob) > 0.5
   mean(n_wrong)
 }
-
 # compute the average number of wrong predictions in the (training) data
 loss_func(my_alc$high_use, my_alc$probability)
-
 # K-fold cross-validation
 cv <- cv.glm(data = alc, cost = loss_func, glmfit = my_model_2, K = 10)
-
 # average number of wrong predictions in the cross validation
 cv$delta[1]
 ```
