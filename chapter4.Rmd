@@ -1,0 +1,112 @@
+# Clustering and Classification
+
+*What follows is my report for the IODS course exercise 4 that focuses on clustering and classification*
+
+```{r message = FALSE, warning = FALSE}
+# necessary libraries
+library(MASS)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+# load data from MASS package
+data("Boston")
+```
+
+```{r}
+# explore the data
+str(Boston)
+dim(Boston)
+```
+
+```{r}
+# show summary of variables and vizualize variables and their relationships
+summary(Boston)
+pairs(Boston[6:10])
+```
+
+```{r}
+# standardize the variables (scale them)
+boston_scaled <- scale(Boston)
+summary(boston_scaled)
+```
+
+```{r}
+# define data as data frame
+boston_scaled <- as.data.frame(boston_scaled)
+
+# set quantiles as breaks
+bins <- quantile(boston_scaled$crim)
+
+# create categorial variable of teh crime rate (crim)
+boston_scaled$crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
+
+# drop old crime rate variable
+boston_scaled <- select(boston_scaled, -crim)
+
+# divide data in training and test data sets
+n <- nrow(boston_scaled)
+sample <- sample(n,  size = n * 0.8)
+train <- boston_scaled[sample,]
+test <- boston_scaled[-sample,]
+```
+
+```{r}
+# fit linear discriminent analysis
+fit <- lda(crime ~ ., data = train)
+
+# make a biplot
+# function for the biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "magenta3", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# plot the lda results
+plot(fit, dimen = 2, col = as.numeric(train$crime), pch = as.numeric(train$crime))
+lda.arrows(fit, myscale = 2)
+```
+
+```{r}
+# save true crime classes and then remove from them test data set
+correct_classes <- test$crime
+test <- select(test, -crime)
+
+# predict classes with LDA model
+pred <- predict(fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = pred$class)
+```
+
+```{r}
+# reload "Boston" data set
+data('Boston')
+
+# standardize the variables (scale them)
+boston_scaled_2 <- scale(Boston)
+
+# calculate distances between observations
+dist_eu <- dist(boston_scaled_2)
+
+# determine the best number of clusters
+k_max <- 10
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+
+# k-means clustering
+km <-kmeans(boston_scaled_2, centers = 2)
+```
+
+```{r}
+# plot the Boston dataset with clusters
+pairs(boston_scaled_2[,6:10], col = km$cluster)
+
+```
