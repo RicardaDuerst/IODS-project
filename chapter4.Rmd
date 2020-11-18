@@ -2,6 +2,8 @@
 
 *What follows is my report for the IODS course exercise 4 that focuses on clustering and classification*
 
+The data used for the following analysis is from the R package *MASS* and contains information on the **Boston** (USA) **housing market**, including neighborhood variables and air pollution data. More precisely, it is aggregative census tract data in the Boston Standard Metropolitan Statistical Area (not individual observations) in 1970 (see Harrison, D. and Rubinfeld, D.L. (1978) Hedonic prices and the demand for clean air. J. Environ. Economics and Management 5, 81–102). There are 14 variables (mainly numerical) and 506 observations.
+
 ```{r message = FALSE, warning = FALSE}
 # necessary libraries
 library(MASS)
@@ -20,11 +22,23 @@ str(Boston)
 dim(Boston)
 ```
 
+To further explore the data set, I used statistical summaries of all variables and scatter plots for pairs formed from five variables. The following variables can be seen in the plot:
+
+* *crim*: per capita crime rate by town
+* *rm*: average number of rooms per dwelling
+* *age*: proportion of owner-occupied units built prior to 1940
+* *rad*: index of accessibility to radial highways
+* *medv*: median value of owner-occupied homes in \$1000s
+
+From the plot, it is obvious that there are several relationships between the variables. There is a strong positive relationship between the number of rooms in a dwelling (*rm*) and the medium value of homes (*medv*), which is plausible. Further, there seems to be a negative connection between the crime rate (*crim*) and the medium value of homes, meaning that with higher crime rates the value of homes is decreasing in the districts. One could also conclude from the scatter plot for *age* and *medv* that there is a a negative relationship. That is, if there are more houses build prior to 1940, the median value of houses decreases. In addition, the crime rate (*crim*) increases with the proportion of older houses (*age*). There is another visible positive relationship between the index of accessibility of highways (*rad*) and the crime rate (*crim*).
+
 ```{r}
-# show summary of variables and vizualize variables and their relationships
+# show summary of variables and visualize variables and their relationships
 summary(Boston)
-pairs(Boston[6:10])
+pairs(Boston[c(1, 6, 7, 9, 14)])
 ```
+
+For the analysis it is important to standardize (scale) the variables to achieve comparable distances. That this worked properly can be seen from the summaries of the scaled variables. Now, the mean for every variable is zero. Another data adjustment was made by creating a new categorical variable for the crime rate. The new variable *crime* was formed by binning the data into four categories using the quantiles. The old variable (*crim*) was dropped from the data set. Further, data was divided into a test set and a training set that includes 80% of the data.
 
 ```{r}
 # standardize the variables (scale them)
@@ -39,7 +53,7 @@ boston_scaled <- as.data.frame(boston_scaled)
 # set quantiles as breaks
 bins <- quantile(boston_scaled$crim)
 
-# create categorial variable of teh crime rate (crim)
+# create categorical variable of the crime rate (crim)
 boston_scaled$crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
 
 # drop old crime rate variable
@@ -52,9 +66,13 @@ train <- boston_scaled[sample,]
 test <- boston_scaled[-sample,]
 ```
 
+For the main analysis, I fitted a linear discriminant analysis (LDA) on the training data with the categorical crime rate as the target variable and all other 13 variables as the explanatory variables. The output of the LDA shows that the linear discriminant 1 explains 93.7% of the between group variance. The LDA biplot shows a scatter plot of the linear discriminants 1 and 2 (because these explain most of the between group variance) from the LDA. The four classes of crime rates are colored (low - black, medium low - red, medium high - green, high - blue). The length and direction of the pink arrows show the effect of the explanatory variables on the crime rate classes and are representative of the model coefficients. You can see that the variable *rad* (index of accessibility to highways) has the biggest influence on classifying the observations.
+
 ```{r}
-# fit linear discriminent analysis
+# fit linear discriminant analysis
 fit <- lda(crime ~ ., data = train)
+# summary of the LDA
+fit
 
 # make a biplot
 # function for the biplot arrows
@@ -72,6 +90,8 @@ plot(fit, dimen = 2, col = as.numeric(train$crime), pch = as.numeric(train$crime
 lda.arrows(fit, myscale = 2)
 ```
 
+After predicting the crime rate classes of the test data with my LDA model, I compared the true classes with the predicted ones using cross-tabulation. The results show that the LDA model correctly predicted all of the observations with a high crime rate (27). The model had more difficulties predicting the low crime rate class as there are 2 observations predicted as medium high. However, 20 low crime observations were correctly predicted and 6 were put in the neighboring category medium low. It seems that the medium categories are harder to predict than the extreme categories: Only 11 from 21 medium low cases and 14 from 26 medium high cases were predicted correctly. 
+
 ```{r}
 # save true crime classes and then remove from them test data set
 correct_classes <- test$crime
@@ -83,6 +103,8 @@ pred <- predict(fit, newdata = test)
 # cross tabulate the results
 table(correct = correct_classes, predicted = pred$class)
 ```
+
+I reloaded the data set and standardized it again to calculate the distances between the observations using the Eucledian distance. By calculating the total within sum of squares for a number of 1 to 10 clusters I searched for the optimal number of clusters. In the plot, the sudden drop of the within sum of squares indicates that the optimal number of clusters is two. Then I ran a k-means clustering algorithm on the data set with two clusters. I visualized the results using the R function *ggpairs* on the five variables from above and gave the two clusters different colors. You can clearly see that some variables effect the clustering results more than others (where there is a clear separation between the two cluster colors). These are the crime rate (*crim*) and the index of accessibility to radiant highways (*rad*).
 
 ```{r}
 # reload "Boston" data set
@@ -103,10 +125,8 @@ qplot(x = 1:k_max, y = twcss, geom = 'line')
 
 # k-means clustering
 km <-kmeans(boston_scaled_2, centers = 2)
-```
 
-```{r}
-# plot the Boston dataset with clusters
-pairs(boston_scaled_2[,6:10], col = km$cluster)
+# plot the Boston data set with clusters
+pairs(boston_scaled_2[,c(1, 6, 7, 9, 14)], col = km$cluster)
 
 ```
