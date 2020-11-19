@@ -66,7 +66,7 @@ train <- boston_scaled[sample,]
 test <- boston_scaled[-sample,]
 ```
 
-For the main analysis, I fitted a linear discriminant analysis (LDA) on the training data with the categorical crime rate as the target variable and all other 13 variables as the explanatory variables. The output of the LDA shows that the linear discriminant 1 explains 93.7% of the between group variance. The LDA biplot shows a scatter plot of the linear discriminants 1 and 2 (because these explain most of the between group variance) from the LDA. The four classes of crime rates are colored (low - black, medium low - red, medium high - green, high - blue). The length and direction of the pink arrows show the effect of the explanatory variables on the crime rate classes and are representative of the model coefficients. You can see that the variable *rad* (index of accessibility to highways) has the biggest influence on classifying the observations.
+For the main analysis, I fitted a linear discriminant analysis (LDA) on the training data with the categorical crime rate as the target variable and all other 13 variables as the explanatory variables. The output of the LDA shows that the linear discriminant 1 explains 94.7% of the between group variance. The LDA biplot shows a scatter plot of the linear discriminants 1 and 2 (because these explain most of the between group variance) from the LDA. The four classes of crime rates are colored (low - black, medium low - red, medium high - green, high - blue). The length and direction of the pink arrows show the effect of the explanatory variables on the crime rate classes and are representative of the model coefficients. You can see that the variable *rad* (index of accessibility to highways) has the biggest influence on classifying the observations.
 
 ```{r}
 # fit linear discriminant analysis
@@ -90,12 +90,12 @@ plot(fit, dimen = 2, col = as.numeric(train$crime), pch = as.numeric(train$crime
 lda.arrows(fit, myscale = 2)
 ```
 
-After predicting the crime rate classes of the test data with my LDA model, I compared the true classes with the predicted ones using cross-tabulation. The results show that the LDA model correctly predicted all of the observations with a high crime rate (27). The model had more difficulties predicting the low crime rate class as there are 2 observations predicted as medium high. However, 20 low crime observations were correctly predicted and 6 were put in the neighboring category medium low. It seems that the medium categories are harder to predict than the extreme categories: Only 11 from 21 medium low cases and 14 from 26 medium high cases were predicted correctly. 
+After predicting the crime rate classes of the test data with my LDA model, I compared the true classes with the predicted ones using cross-tabulation. The results show that the LDA model correctly predicted all of the observations with a high crime rate (31). The model had more difficulties predicting the low crime rate class as there is one observation predicted as medium high. However, 13 low crime observations were correctly predicted and 9 were put in the neighboring category medium low. It seems that the medium categories are harder to predict than the extreme categories: Only 11 from 27 medium low cases and 16 from 21 medium high cases were predicted correctly. In addition, there is a medium high crime rate predicted as a low crime rate.
 
 ```{r}
 # save true crime classes and then remove from them test data set
 correct_classes <- test$crime
-test <- select(test, -crime)
+test <- dplyr::select(test, -crime)
 
 # predict classes with LDA model
 pred <- predict(fit, newdata = test)
