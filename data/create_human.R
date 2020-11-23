@@ -39,3 +39,43 @@ dim(human) #correct number of observations and variables
 
 # save data set as csv file to data folder
 write.table(human, file = "data\\human.csv", sep = ",")
+
+##############################################################################
+
+# Date: 23.11.2020
+# IODS: Script for RStudio Exercise 5
+
+# necessary libraries
+library(stringr)
+library(dplyr)
+library(tibble)
+
+# read in data
+human <- read.table("data\\human.csv", sep = ",")
+
+# structure and dimensions of the data
+str(human)
+dim(human) # 195 observations and 19 variables, as it should be
+
+# transform GNI variable to numeric
+human$gni <- str_replace(human$gni, pattern = ",", replace = "") %>% as.numeric()
+
+# exclude unneeded variables
+keep = c("cntr", "sec_edu_sexratio", "lfp_sexratio", "exp_edu", "e0", "gni", "mmr", "abr", "parlia")
+human_new <- dplyr::select(human, one_of(keep))
+
+# exclude observations with missing values
+human_new <- filter(human_new, complete.cases(human_new))
+
+# remove observations that relate to regions and not countries (the last 6 in the data set)
+my_human <- human_new[1:(nrow(human_new)-7),]
+
+# transform cntr variable to rownames
+my_human <- my_human %>% remove_rownames() %>% column_to_rownames("cntr")
+
+# check dimensions
+dim(my_human) # everything as it should be
+
+# overrite old human data with new human data
+write.table(my_human, file = "data\\human.csv", sep = ",", row.names = TRUE)
+
