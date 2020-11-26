@@ -1,0 +1,115 @@
+# Dimensionality Reduction Techniques
+
+*What follows is my report for the IODS course exercise 5 that focuses on principal component analysis (PCA) and multiple correspondence analysis (MCA) as dimensionality reduction techniques.*
+
+The data used for this exercise comes from the United Nations Development Programme (see <http://hdr.undp.org/en/content/human-development-index-hdi>) and is a combination of two data sets containing information on the Human Development Index (HDI) and the Gender Inequality Index (GII) for most countries of the world.
+
+```{r message = FALSE, warning = FALSE}
+# necessary libraries
+library(GGally)
+library(corrplot)
+library(FactoMineR)
+library(dplyr)
+library(tidyr)
+library(gridExtra)
+```
+
+```{r}
+# read in previously prepared data
+human <- read.table("data\\human.csv", header = TRUE, sep = ",")
+```
+
+After some preparation steps, the resulting data set contains observations on 155 countries and the following 8 (mainly numerical) variables:
+
+* *sec_edu_sexratio*: Ratio of female and male population with secondary education
+* *lfp_sexratio*: Ratio of female and male labor force participation
+* *exp_edu*: Expected years of schooling
+* *e0*: Life expectancy at birth
+* *gni*: Gross National Income
+* *mmr*: Maternal Mortality Ratio
+* *abr*: Adolescent birth rate
+* *parlia*: Percentage of female representatives in parliament
+
+```{r}
+# explore structure and dimensions of the data
+str(human)
+dim(human)
+```
+
+To further explore the data and the relationship between its variables, I prepared visualizations of variable pairs and the correlation matrix, and statistical summaries of the variables.  ...
+
+```{r}
+# plots
+ggpairs(human, upper = list(continuous = wrap("cor", size = 2.5))) 
+corrplot(cor(human))
+
+# statistical summaries
+summary(human)
+```
+
+```{r}
+# PCA (with the SVD method)
+pca_human <- prcomp(human)
+
+# principal component's captured variability
+summary(pca_human)
+
+# biplot
+biplot(pca_human, choices = 1:2, cex = c(0.65, 1), col = c("grey40", "deeppink2"),
+       xlab = "PC1 (>99.99%)", ylab = "PC2 (<0.01%)")
+```
+
+```{r}
+# standardize the data
+human_std <- scale(human)
+
+# PCA (with the SVD method)
+pca_human_std <- prcomp(human_std)
+
+# principal component's captured variability
+summary(pca_human_std)
+
+# biplot
+biplot(pca_human_std, choices = 1:2, cex = c(0.5, 0.8), col = c("grey40", "deeppink2"),
+       xlim = c(-0.3, 0.3), xlab = "PC1 (53.61%)", ylab = "PC2 (16.24%)")
+text(x = 0, y = 15, "Empowerment\nLabor market", cex = 0.7, col = "darkblue")
+text(x = 20, y = 1, "Health", cex = 0.7, col = "darkblue")
+text(x = -20, y = 3, "Long life", cex = 0.7, col = "darkgreen")
+text(x = -18, y = -2, "Knowledge", cex = 0.7, col = "darkgreen")
+text(x = -16, y = -4.5, "Standard of living", cex = 0.7, col = "darkgreen")
+text(x = 20, y = 10, "GII", col = "darkblue")
+text(x = -20, y = 6, "HDI", col = "darkgreen")
+```
+
+```{r}
+# load data from package FactoMineR
+data(tea)
+
+# structure and dimensions of the data
+str(tea)
+dim(tea)
+
+# filter data to chosen variables
+vars <- c("How", "sugar", "where", "age_Q", "sex", "effect.on.health", "frequency")
+my_tea <- dplyr::select(tea, one_of(vars))
+
+# rename two variables
+names(my_tea)[c(4, 6)] <- c("age", "health.effect")
+
+# visualization of my data
+a <- ggplot(data = my_tea, aes(x = How)) + geom_bar(stat = "count")
+b <- ggplot(data = my_tea, aes(x = sugar)) + geom_bar(stat = "count")
+c <- ggplot(data = my_tea, aes(x = where)) + geom_bar(stat = "count") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+d <- ggplot(data = my_tea, aes(x = age)) + geom_bar(stat = "count")
+e <- ggplot(data = my_tea, aes(x = sex)) + geom_bar(stat = "count")
+f <- ggplot(data = my_tea, aes(x = health.effect)) + geom_bar(stat = "count") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+grid.arrange(a, b, c, d, e, f, nrow = 2)
+```
+
+```{r}
+# MCA on my data
+mca <- MCA(my_tea, graph = TRUE)
+summary(mca)
+```
