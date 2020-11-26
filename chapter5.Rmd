@@ -2,7 +2,7 @@
 
 *What follows is my report for the IODS course exercise 5 that focuses on principal component analysis (PCA) and multiple correspondence analysis (MCA) as dimensionality reduction techniques.*
 
-The data used for this exercise comes from the United Nations Development Programme (see <http://hdr.undp.org/en/content/human-development-index-hdi>) and is a combination of two data sets containing information on the Human Development Index (HDI) and the Gender Inequality Index (GII) for most countries of the world.
+The data used for this exercise comes from the United Nations Development Programme (see <http://hdr.undp.org/en/content/human-development-index-hdi>) and is a combination of two data sets containing information on the **Human Development Index (HDI) and the Gender Inequality Index (GII)** for most countries of the world.
 
 ```{r message = FALSE, warning = FALSE}
 # necessary libraries
@@ -36,16 +36,19 @@ str(human)
 dim(human)
 ```
 
-To further explore the data and the relationship between its variables, I prepared visualizations of variable pairs and the correlation matrix, and statistical summaries of the variables.  ...
+To further explore the data and the relationship between its variables, I prepared visualizations of variable pairs and the correlation matrix, and statistical summaries of the variables. In the first plot, the graphs in the diagonal show the distributions of every variable in the data set. The distributions of the Gross National Income (*gni*), the maternal mortality ration (*mmr*) and the adolescent birth rate (*abr*) are heavily right-skewed. The years of expected education (*exp_edu*) are almost normally distributed and have a mean of 13 years of schooling (as seen from the variable summary). In most countries, there are more men in the labor force and there is a higher proportion of men with secondary education, compared to females. This can be seen from the graphs for *lfp_sexratio* and *sec_edu_sexratio*. In addition, the representation of the sexes in the parliaments is favoring men, in most countries (see graph for *parlia*). The life expectancy at birth is around 75 years in most countries. However, there is another local maximum at approximately 60 years. This variation in *e0* can also be seen from the interquartile range of appr. 11 years (from the variable summary). The graphs above and below the diagonal in the *ggpairs* plot and the correlation plot show (not surprisingly) the same results. There are some highly significant and very strong correlations between the variables: First, the sex ratio of secondary education is positively correlated with the years of expected education, the life expectancy, and the GNI. Further, there is a strong negative correlation with the maternal mortality rate. Second, a higher sex ratio of labor force participation is correlated with higher maternal mortality rates. Third, the expected years of schooling are also strongly correlated with life expectancy (+), GNI (+), MMR (-), and ABR (-), etc. Overall, there are significant correlations for most of the variable pairs.
 
 ```{r}
 # plots
-ggpairs(human, upper = list(continuous = wrap("cor", size = 2.5))) 
+ggpairs(human, upper = list(continuous = wrap("cor", size = 2.5))) +
+  theme(axis.text.x = element_text(angle = 90))
 corrplot(cor(human))
 
 # statistical summaries
 summary(human)
 ```
+
+To demonstrate the importance of standardizing the data for a principal components analysis (PCA), I fist performed a PCA on the un-standardized data. The method used for the PCA is the Singular-Value-Decomposition (SVD). From the summary of the model, we can see that the first principle component (PC1) captures more than 99.99% of the variance in the data. This can also be seen from the biplot where the observations are plotted on the coordinates of PC1 on the x-axis and PC2 on the y-axis (gray country names). Here, all arrows representing the original variables (pink), are lying on top of each other and only the variable for GNI has a visible arrow, parallel to the first principal component. This is because GNI has the largest range of values and therefore contributes most to the analysis.
 
 ```{r}
 # PCA (with the SVD method)
@@ -58,6 +61,9 @@ summary(pca_human)
 biplot(pca_human, choices = 1:2, cex = c(0.65, 1), col = c("grey40", "deeppink2"),
        xlab = "PC1 (>99.99%)", ylab = "PC2 (<0.01%)")
 ```
+
+I then repeated the PCA with standardized data (all variables have a mean of 0 and a variance of 1). The results are very different from the first analysis, because now, the effects of the variables can be compared as they contributre equally to the analysis. PC1 in the second model captures 53.61% of the variance in the data and PC2 16.24%. Together, the first two principal components are able to capture almost 70% of the variance.
+Further, these differences can be seen in the biplot. Now, each variable is represented by a visible arrow. The arrows for the percentage of females in parliament and the labor force sex ratio are almost parallel to the second principal component. They describe the phenomenons of female empowerment and female labor force participation. The arrows that are parallel to the first principal component and are pointing towards the negative coordinates are related to the topics long life, decent standard of living, and knowledge (life expectancy at birth, GNI, and expected years of schooling). In this group there is also the arrow for the sex ratio of secondary education which also represents the topic of empowerment. Also parallel to the x-axis but pointing towards positive coordinates of PC1 are the maternal mortality ratio and the adolescent birth rate that generally measure the dimension of health. With reference to the technical notes on the Human Development Index (HDI) from the UN (<http://hdr.undp.org/sites/default/files/hdr2015_technical_notes.pdf>), I colored the phenomenons that are used to calculate the HDI green and the ones used to calculate the Gender Inequality Index (GII) blue (note that health is used to calculate both indices). Judging from the biplot, my personal interpretation for the first principal component is that PC1 mainly measures the HDI as there are strong correlations with knowledge, a decent standard of living, and a long and healthy live. The second principal component is representing the Gender Inequality Index as it is  strongly correlated with female empowerment and female labor force participation.
 
 ```{r}
 # standardize the data
@@ -73,13 +79,26 @@ summary(pca_human_std)
 biplot(pca_human_std, choices = 1:2, cex = c(0.5, 0.8), col = c("grey40", "deeppink2"),
        xlim = c(-0.3, 0.3), xlab = "PC1 (53.61%)", ylab = "PC2 (16.24%)")
 text(x = 0, y = 15, "Empowerment\nLabor market", cex = 0.7, col = "darkblue")
-text(x = 20, y = 1, "Health", cex = 0.7, col = "darkblue")
-text(x = -20, y = 3, "Long life", cex = 0.7, col = "darkgreen")
-text(x = -18, y = -2, "Knowledge", cex = 0.7, col = "darkgreen")
-text(x = -16, y = -4.5, "Standard of living", cex = 0.7, col = "darkgreen")
-text(x = 20, y = 10, "GII", col = "darkblue")
+text(x = 20, y = 1, "Health", cex = 0.7, col = "darkgreen")
+text(x = -20, y = 1.5, "Empowerment", cex = 0.7, col = "darkblue")
+text(x = -20, y = 3, "Knowledge", cex = 0.7, col = "darkgreen")
+text(x = -18, y = -2, "Long life", cex = 0.7, col = "darkgreen")
+text(x = -16, y = -1, "Standard of living", cex = 0.7, col = "darkgreen")
+text(x = -15, y = 15, "GII", col = "darkblue")
 text(x = -20, y = 6, "HDI", col = "darkgreen")
 ```
+
+For the multiple correspondence analysis (MCA), I used data on **tea consumption** from the *FactoMineR* package. This data set contains 36 (mainly categorical) variables on preferences and tea drinking behavior of 300 individuals. I chose the following 7 variables for the analysis of which I thought they are interesting:
+
+* *How*: How do you drink your tea?
+* *sugar*: Do you drink your tea with sugar?
+* *where*: Where do you buy your tea?
+* *age_Q*: Age quintile
+* *sex*
+* *effect.on.health*: Do you think it has an effect on your health?
+* *frequency*: How often do you drink tea?
+
+From the bar plots of the variables, you can see that most of the individuals drink their tea without anything. The second biggest group drinks it with milk. The groups of sugar and no-sugar drinkers are almost even. Tea is mainly bought in chain stores and there are slightly more female than male tea-drinkers. Further, the majority of people thinks that there is no health effect of tea drinking. Most people that answered the questionnaire drink tea daily and the age distribution is right-skewed.
 
 ```{r}
 # load data from package FactoMineR
@@ -105,11 +124,16 @@ d <- ggplot(data = my_tea, aes(x = age)) + geom_bar(stat = "count")
 e <- ggplot(data = my_tea, aes(x = sex)) + geom_bar(stat = "count")
 f <- ggplot(data = my_tea, aes(x = health.effect)) + geom_bar(stat = "count") +
   theme(axis.text.x = element_text(angle = 20, hjust = 1))
-grid.arrange(a, b, c, d, e, f, nrow = 2)
+g <- ggplot(data = my_tea, aes(x = frequency)) + geom_bar(stat = "count") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+grid.arrange(a, b, c, d, e, f, g, nrow = 3)
 ```
 
+Then I performed a MCA on my tea data. The results can be seen in the summary of the analysis. The first dimension explains 11.22% of the variance in the data and the second dimension 9.98%. The squared correlations between the variables and the first dimension show the strongest links for the variables *frequency*, *sex*, *age*, and *sugar*. The second dimension is mainly correlated with *how*, *where*, and *age*. The biplot of the MCA (first plot) shows similarities between the categories of the variables plotted on the coordinates of the first two dimensions. From this, we can see that e.g. buying tea in the tea shop and drinking it with lemon are similar. Other similar categories are for example no sugar in the tea, drinking it twice a day, being female, and being in the age group 45-59. The second plot shows us the individuals while the third plot shows the variables (without categories)  plotted on the same grid. The third plot is a visual representation of the squared correlation of the variables with the dimensions.
+
 ```{r}
-# MCA on my data
+# MCA on my data and plots
 mca <- MCA(my_tea, graph = TRUE)
 summary(mca)
+
 ```
