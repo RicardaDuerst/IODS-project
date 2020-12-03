@@ -16,11 +16,18 @@ rats <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/maste
 
 # explore the data sets
 
+# The BPRS data contains 40 observations (men) and their treatment group (1 or 2)
+# as well as repeated measures of their psychological health for 8 weeks after the
+# the initial measurement in week 0 and subsequent treatment.
+
 # BPRS
 names(bprs)
 str(bprs)
 dim(bprs)
 summary(bprs)
+
+# The RATS data contains 16 observations (rats) and their treatment group (1, 2, or 3)
+# as well as repeated measures of their weight over a 9-week period.
 
 # RATS
 names(rats)
@@ -52,6 +59,13 @@ rats.long <- rats.long %>% mutate(time = as.integer(substr(times, 3, 5)))
 
 
 # explore the data sets in long format
+
+# In contrast to the wide format data where the information of each men or rat 
+# was stored in one row (each repeated measure had their own column), there is
+# only one column for the BPRS or weight and a new variable indicating the time
+# of measurement. Therefore, the individuals men or rats appear several times in
+# different rows of the data set. Hence, it is called the long format, as the
+# data is stored under each other instead of next to each other (wide format).
 
 # BPRS
 names(bprs.long)
