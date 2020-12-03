@@ -1,0 +1,79 @@
+# Analysis of longitudinal data
+
+*What follows is my report for the IODS course exercise 6 that focuses exploring longitudinal data as well as performing and interpreting linear mixed effects models.*
+
+```{r message = FALSE, warning = FALSE}
+# necessary libraries
+library(ggplot2)
+library(dplyr)
+```
+
+
+
+```{r}
+# read in previously prepared data
+bprs <- read.table("data\\bprs.csv", header = TRUE, sep = ",")
+rats <- read.table("data\\rats.csv", header = TRUE, sep = ",")
+
+# convert categorical ID and treatment group variables to factors
+bprs$subject <- factor(bprs$subject)
+bprs$treatment <- factor(bprs$treatment)
+rats$ID <- factor(rats$ID)
+rats$Group <- factor(rats$Group)
+
+```
+
+
+# RATS (chapter 8)
+weight of rats is increasing over the 9 weeks for almost all of them, if not increasing, at least steady. colors = treatment groups. tracking is visible, rats that started with a higher weight will still have a higher weight throughout the study. 
+```{r}
+# plots to explore the data
+rats %>% ggplot(aes(x = time, y = weight, color = Group)) +
+  geom_line(aes(linetype = ID)) +
+  theme(legend.position = "none")
+```
+
+let's standardize so we can see the tracking more clearly. now, we can see that there are rats that decreased in weight in the red and the green group and more rats had a stable weight? it is hard to see whether there is a difference in weight gain or loss between the diet groups.
+
+```{r}
+# standardize the weight variable
+rats <- rats %>% group_by(time) %>% mutate(std_weight = scale(weight)) %>% ungroup()
+
+# plot with standardized weight
+rats %>% ggplot(aes(x = time, y = std_weight, color = Group)) +
+  geom_line(aes(linetype = ID)) +
+  theme(legend.position = "none")
+```
+
+next, I will look at the longitudinal data using a summary measure method. we want to know weather the final weight compared to the weight in the beginning is different for the three groups of rats on different diets. therefore, I chose the percentage change between the last and the first weight as the summary measure.
+
+```{r}
+# calculate the percentage change between first and last value of weight (100 * (last weight - first weight) / first weight)
+rats <- rats %>% group_by(ID) %>% mutate(change = 100 * (weight[time == 64]-weight[time == 1])/weight[time == 1]) %>% ungroup()
+
+# plot the percentage change by group of diet
+
+# scatter plot
+rats %>% ggplot(aes(x = ID, y = p.change, color = Group)) +
+  geom_point() +
+  scale_y_continuous(name = "percentage change")
+
+# boxplot
+rats %>% ggplot(aes(x = Group, y = p.change, color = Group)) +
+  geom_boxplot() +
+  theme(legend.position = "none") +
+  scale_y_continuous(name = "percentage change")
+```
+
+We can now see that there seems to be an outlier in group 1. let's remove it an plot the boxplot again. from the scatter plot we see that is is the rat with ID 1
+
+```{r}
+# remove outlier
+rats.nice <- rats %>% filter(ID != 1)
+
+# boxplot
+rats.nice %>% ggplot(aes(x = Group, y = p.change, color = Group)) +
+  geom_boxplot() +
+  theme(legend.position = "none") +
+  scale_y_continuous(name = "percentage change")
+```
