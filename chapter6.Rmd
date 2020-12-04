@@ -86,7 +86,7 @@ rats.nice %>% ggplot(aes(x = Group, y = p.change, color = Group)) +
 
 ### Mixed effects model with *BPRS* data
 
-In the following, I will use data on 40 men (variable *subject*) and their BPRS score for schizophrenia (variable *bprs*) that has been assessed over a period of 8 weeks (variable *week*). The BPRS (brief psychiatric rating scale) measures 18 symptoms on a scale from 1 (not present) to 7 (extremely severe). The subjects were assigned to two different treatment groups (variable *treatment*) after an initial baseline measure (*week* = 0) and have been repeatedly evaluated every week.
+In the following, I will use data on 40 men (variable *subject*) and their BPRS score for schizophrenia (variable *bprs*) that has been assessed over a period of 8 weeks (variable *week*). The BPRS (brief psychiatric rating scale) measures 18 symptoms on a scale from 1 (not present) to 7 (extremely severe). The subjects were assigned to two different treatment groups (variable *treatment*) after an initial baseline measure (*week* = 0) and have been repeatedly evaluated every week. To begin with, I proceeded with this data like I did with the *RATS* data: First, I plotted the bprs score development over the weeks for each individual and separately for the two treatment groups. From eyeballing, it is hard to conclude anything about differences in score development because of the different treatments. The tracking phenomenon in present in both groups. After standardizing the BPRS variable to see the tracking more clearly, it is still hard to answer the question whether the two groups differ in their development of the score over time. Therefore, we need more advanced methods called linear mixed effects models that take therepeated measures and their non-independence into account.
 
 ```{r}
 # strcture and dimension of the data
@@ -97,9 +97,7 @@ bprs %>% ggplot(aes(x = week, y = bprs, color = treatment)) +
   geom_line(aes(linetype = subject)) +
   facet_grid(. ~ treatment, labeller = label_both) +
   theme(legend.position = "none")
-```
 
-```{r}
 # standardize the bprs variable
 bprs <- bprs %>% group_by(week) %>% mutate(std_bprs = scale(bprs)) %>% ungroup()
 
@@ -111,6 +109,8 @@ bprs %>% ggplot(aes(x = week, y = std_bprs, color = treatment)) +
   scale_y_continuous(name = "standardized bprs")
 
 ```
+
+I started by fitting a random intercet model on the data. The response variable is *bprs* and the explanatory variables are *week* and *treatment*. I have to stop the interpretation of my results here as I have to prioritize and other parts of my doctoral research are urgent at the moment. In short: The random intercept and random slope model is better than just the random intercept model. And the model with interaction term is not better than the random intercept and slope model.
 
 ```{r}
 # fit a random intercept model
