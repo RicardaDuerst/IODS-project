@@ -9,6 +9,7 @@ The data used for the following analysis is from the R package *MASS* and contai
 library(MASS)
 library(dplyr)
 library(ggplot2)
+library(tidyr)
 ```
 
 ```{r}
@@ -57,7 +58,7 @@ bins <- quantile(boston_scaled$crim)
 boston_scaled$crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
 
 # drop old crime rate variable
-boston_scaled <- boston_scaled %>% dplyr::select(!crim)
+boston_scaled <- boston_scaled %>% dplyr::select(-crim)
 
 # divide data in training and test data sets
 n <- nrow(boston_scaled)
