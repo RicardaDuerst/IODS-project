@@ -6,9 +6,10 @@
 # necessary libraries
 library(ggplot2)
 library(dplyr)
+library(lme4)
 ```
 
-
+I previously prepared two open-source data sets for this analysis that are later looked upon more deeply (data sources: <https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/BPRS.txt> and <https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt>). The data was transformed from wide to long format. After loading the data, I had to factor two variables in each data set: the identification variable and the treatment group variable.
 
 ```{r}
 # read in previously prepared data
@@ -23,17 +24,21 @@ rats$Group <- factor(rats$Group)
 
 ```
 
+### Exploring the *RATS* data
 
-# RATS (chapter 8)
-weight of rats is increasing over the 9 weeks for almost all of them, if not increasing, at least steady. colors = treatment groups. tracking is visible, rats that started with a higher weight will still have a higher weight throughout the study. 
+In this part, I am going to explore the longitudinal nature of the *RATS* data set. It contains information of 16 rats (variable *ID*) and their weight trajectories (variable *weight*) over a period of 9 weeks (variable *time*. The rats were assigned to three different groups (variable *Group*) and were fed a different diet, respectively. The plot shows the development of each rat's weight over the 9 weeks. The colors red, blue and green differentiate the different diet groups. For the majority of the rats, the weight is increasing over time. If it is not increasing, their weight seems to be at least steady. Further, the phenomenon of *tracking* is visible in the plot, meaning, that rats that started with a higher weight tend to have a higher weight throughout the study. 
+
 ```{r}
-# plots to explore the data
+# structure and dimension of the data
+str(rats)
+
+# plot to explore the data
 rats %>% ggplot(aes(x = time, y = weight, color = Group)) +
   geom_line(aes(linetype = ID)) +
   theme(legend.position = "none")
 ```
 
-let's standardize so we can see the tracking more clearly. now, we can see that there are rats that decreased in weight in the red and the green group and more rats had a stable weight? it is hard to see whether there is a difference in weight gain or loss between the diet groups.
+I standardized the weight variable in an attempt to see the tracking more clearly. However, in the new plot, we can see that there are rats that have a decreased (standardized) weight in the red and the green group. In addition, there are more rats that have a stable weight development. From these two plots, it is difficult to see whether there is a difference in weight gain or loss between the rats with different diets.
 
 ```{r}
 # standardize the weight variable
@@ -42,14 +47,15 @@ rats <- rats %>% group_by(time) %>% mutate(std_weight = scale(weight)) %>% ungro
 # plot with standardized weight
 rats %>% ggplot(aes(x = time, y = std_weight, color = Group)) +
   geom_line(aes(linetype = ID)) +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  scale_y_continuous(name = "standardized weight")
 ```
 
-next, I will look at the longitudinal data using a summary measure method. we want to know weather the final weight compared to the weight in the beginning is different for the three groups of rats on different diets. therefore, I chose the percentage change between the last and the first weight as the summary measure.
+To further explore this issue, I looked at the longitudinal data using a summary measure method. I wanted to know weather a rat's final weight compared to the weight in the beginning of the study is different for the three groups of rats on different diets. Therefore, I chose the percentage change between the last and the first weight as a summary measure. The percentage change is defined as follows: 100 * (last weight - first weight) / first weight). After calculating the summary measure, I created a scatter plot with the percentage change for each individual rat by diet group. From this plot, we can easily see that diet group 1 consists of 8 rats while there are only 4 rats in the other two groups. The next plot shows scatter plots of the percentage change by group. We can see, that the weight of the rats with diet 2 changed more strongly throughout the study (median percentage change of 15) than the weight of rats in groups 1 (median percentage change of 9) and 3 (median percentage change of 8). In addition, there seems to be an outlier in group one with an exeptionally strong percentage change for this group.
 
 ```{r}
-# calculate the percentage change between first and last value of weight (100 * (last weight - first weight) / first weight)
-rats <- rats %>% group_by(ID) %>% mutate(change = 100 * (weight[time == 64]-weight[time == 1])/weight[time == 1]) %>% ungroup()
+# calculate the percentage change between first and last value of weight 
+rats <- rats %>% group_by(ID) %>% mutate(p.change = 100 * (weight[time == 64]-weight[time == 1])/weight[time == 1]) %>% ungroup()
 
 # plot the percentage change by group of diet
 
@@ -65,7 +71,7 @@ rats %>% ggplot(aes(x = Group, y = p.change, color = Group)) +
   scale_y_continuous(name = "percentage change")
 ```
 
-We can now see that there seems to be an outlier in group 1. let's remove it an plot the boxplot again. from the scatter plot we see that is is the rat with ID 1
+To avoid any bias in the analysis because of this outlier I excluded the respective rat (*ID* = 1) from the data. After plotting the boxplots again, we can see that the general interpretation did not change. However, the difference in weight change between diet groups 2 and 1 is even more pronounced which is not surprising after excluing a high value in group one in the data. Still, the differences in weight development for rats in group 1 and group 3 does not differ much.
 
 ```{r}
 # remove outlier
@@ -76,4 +82,92 @@ rats.nice %>% ggplot(aes(x = Group, y = p.change, color = Group)) +
   geom_boxplot() +
   theme(legend.position = "none") +
   scale_y_continuous(name = "percentage change")
+```
+
+### Mixed effects model with *BPRS* data
+
+In the following, I will use data on 40 men (variable *subject*) and their BPRS score for schizophrenia (variable *bprs*) that has been assessed over a period of 8 weeks (variable *week*). The BPRS (brief psychiatric rating scale) measures 18 symptoms on a scale from 1 (not present) to 7 (extremely severe). The subjects were assigned to two different treatment groups (variable *treatment*) after an initial baseline measure (*week* = 0) and have been repeatedly evaluated every week.
+
+```{r}
+# strcture and dimension of the data
+str(bprs)
+
+# plot to explore the data
+bprs %>% ggplot(aes(x = week, y = bprs, color = treatment)) +
+  geom_line(aes(linetype = subject)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none")
+```
+
+```{r}
+# standardize the bprs variable
+bprs <- bprs %>% group_by(week) %>% mutate(std_bprs = scale(bprs)) %>% ungroup()
+
+# plot with standardized weight
+bprs %>% ggplot(aes(x = week, y = std_bprs, color = treatment)) +
+  geom_line(aes(linetype = subject)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") +
+  scale_y_continuous(name = "standardized bprs")
+
+```
+
+```{r}
+# fit a random intercept model
+bprs_rim <- lmer(bprs ~ week + treatment + (1 | subject), data = bprs, REML = FALSE)
+
+# summary of the random intercept model
+summary(bprs_rim)
+
+```
+
+```{r}
+# create a random intercept and random slope model
+bprs_rim_rsm <- lmer(bprs ~ week + treatment + (week | subject), data = bprs, REML = FALSE)
+
+# print a summary of the model
+summary(bprs_rim_rsm)
+```
+
+
+
+```{r}
+# perform an ANOVA test on the two models
+anova(bprs_rim_rsm, bprs_rim)
+```
+
+
+
+```{r}
+# create a random intercept and random slope model with the interaction
+bprs_inter <- lmer(bprs ~ week + treatment + (week | subject) + week * treatment, data = bprs, REML = FALSE)
+
+# print a summary of the model
+summary(bprs_inter)
+```
+
+
+
+```{r}
+# perform an ANOVA test on the two models
+anova(bprs_inter, bprs_rim_rsm)
+```
+
+```{r}
+# add fitted values to data
+bprs$fitted <- fitted(bprs_rim_rsm)
+
+# plot fitted values of bprs
+bprs %>% ggplot(aes(x = week, y = fitted, color = treatment)) +
+  geom_line(aes(linetype = subject)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") +
+  scale_y_continuous(name = "fitted bprs")
+  
+# compare to original plot with observed bprs
+bprs %>% ggplot(aes(x = week, y = bprs, color = treatment)) +
+  geom_line(aes(linetype = subject)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") +
+  scale_y_continuous(name = "observed bprs")
 ```
